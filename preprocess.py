@@ -1,11 +1,13 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 import metafeatures
 import features
 
-# DATA_DIRECTORY = "/media/veracrypt2/data"
-DATA_DIRECTORY = "V:/data/"
+
+DATA_DIRECTORY = "/media/veracrypt2/data"
+#DATA_DIRECTORY = "data"
 
 DIAG_CODES = [
     "D611",
@@ -82,18 +84,30 @@ def build_and_evaluate(features, ys):
     return evaluate_model(clf, x_test, y_test)
 
 
-def build_meta_model_ys(datasets):
+def iter_all_tses(datasets):
     for (basedata, ys) in datasets:
-        for i, tsvar in enumerate(basedata.columns.values):
+        for tsvar in basedata.columns.values:
+            yield basedata, ys, tsvar
+
+
+def build_meta_model_ys(datasets):
+    last_basedata = None
+    cache = None
+    i = 0
+    for (basedata, ys, tsvar) in iter_all_tses(datasets):
+        if cache is None or basedata is not last_basedata:
             cache = dict()
-            dfs = features.df_to_all_reprs(basedata, tsvar, cache)
-            yield [build_and_evaluate(df, ys) for df in dfs]
+            last_basedata = basedata
+        dfs = features.df_to_all_reprs(basedata, tsvar, cache)
+        yield [build_and_evaluate(df, ys) for df in dfs]
+        i += 1
+        if i % 100 == 0:
+            print("i = {0}".format(i))
 
 
 def build_meta_model_xs(datasets):
-    for (basedata, ys) in datasets:
-        for tsvar in basedata.columns.values:
-            yield metafeatures.extract_meta_features_as_arr(basedata[tsvar])
+    for (basedata, ys, tsvar) in iter_all_tses(datasets):
+        yield metafeatures.extract_meta_features_as_arr(basedata[tsvar])
 
 
 def build_meta_model(xs, ys):
@@ -110,13 +124,13 @@ def meta_build_and_evaluate(xs, ys):
 
 
 if __name__ == "__main__":
-    print("Building training set")
     TRAINING_FILES = ["T887"]
     data = [get_data_for(x) for x in TRAINING_FILES]
-    assert False
-
-
-    xs = build_meta_model_xs(data)
-    ys = build_meta_model_ys(data)
+    print("Building X-values for meta-model")
+    xs = np.array(list(build_meta_model_xs(data)))
+    np.save("meta-model-xs.npy", xs)
+    print("Building Y-values for meta-model")
+    ys = np.array(list(build_meta_model_ys(data)))
+    np.save("meta-model-ys.npy", ys)
     print("Building meta model")
     meta_build_and_evaluate(xs, ys)
