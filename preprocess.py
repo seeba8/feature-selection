@@ -4,8 +4,8 @@ from sklearn.model_selection import train_test_split
 import metafeatures
 import features
 
-#DATA_DIRECTORY = "/media/veracrypt2/data"
-DATA_DIRECTORY = "data"
+# DATA_DIRECTORY = "/media/veracrypt2/data"
+DATA_DIRECTORY = "V:/data/"
 
 DIAG_CODES = [
     "D611",
@@ -46,11 +46,15 @@ path_for = "{0}/{1}-90-raw-measurements.csv".format
 
 
 def read_frame(diag_code):
+    """
+    Read in a csv file from the directory and load it as a pandas dataframe
+    """
     return pd.read_csv(path_for(DATA_DIRECTORY, diag_code))
 
 FILL_NA_VAL = -100000
 
 def get_data_for(diag_code):
+    """loads a file and pivots the time serieses by patient number and code (I think)."""
     df = read_frame(diag_code)
     xs = df.pivot_table(index=["patientnr", "time"],
                         columns="code",
@@ -109,6 +113,9 @@ if __name__ == "__main__":
     print("Building training set")
     TRAINING_FILES = ["T887"]
     data = [get_data_for(x) for x in TRAINING_FILES]
+    assert False
+
+
     xs = build_meta_model_xs(data)
     ys = build_meta_model_ys(data)
     print("Building meta model")
