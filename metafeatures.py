@@ -1,12 +1,44 @@
 import pandas as pd
+import numpy as np
 
 
 def variance(ts):
     return ts.var()
 
+
+def mean(ts):
+    return ts.mean()
+
+
+def median(ts):
+    return ts.median()
+
+
+def count(ts):
+    return ts.unstack().count(axis=1).mean()
+
+
+def existence(ts):
+    us = ts.unstack()
+    return (us.count(axis=1) > 0).sum() / us.shape[0]
+
+
+def ftest(ts):
+    mtx = np.array(ts.unstack())
+    rowmeans = np.nanmean(mtx, axis=1)
+    ssw = np.nan_to_num((mtx.T - rowmeans) ** 2).sum()
+    return ts.var() / ssw
+
+
 META_FEATURES = {
-    "variance": variance
+    "variance": variance,
+    "ftest": ftest,
+    "mean": mean,
+    "median": median,
+    "count": count,
+    "existence": existence,
 }
+
 
 
 def extract_meta_features(timeseries):
